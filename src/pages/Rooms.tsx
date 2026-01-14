@@ -20,118 +20,35 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { fetchRooms, RoomData, registerRoomWithImages } from "@/api/rooms";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { toast } from "sonner";
 
-const initialRooms = [
-  {
-    id: "101",
-    roomNumber: "101",
-    name: "Deluxe Suite",
-    images: [
-      "https://images.unsplash.com/photo-1590490360182-c33d57733427?w=800",
-      "https://images.unsplash.com/photo-1522771739844-6a9f6d5f14af?w=800",
-      "https://images.unsplash.com/photo-1631049307264-da0ec9d70304?w=800",
-    ],
-    features: ["King Bed", "City View", "Mini Bar", "Work Desk"],
-    price: 200,
-    available: false,
-  },
-  {
-    id: "102",
-    roomNumber: "102",
-    name: "Garden Suite",
-    images: [
-      "https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?w=800",
-      "https://images.unsplash.com/photo-1616594039964-ae9021a400a0?w=800",
-    ],
-    features: ["Queen Bed", "Garden View", "Private Terrace", "WiFi"],
-    price: 250,
-    available: false,
-  },
-  {
-    id: "201",
-    roomNumber: "201",
-    name: "Standard Room",
-    images: [
-      "https://images.unsplash.com/photo-1611892440504-42a792e24d32?w=800",
-      "https://images.unsplash.com/photo-1618773928121-c32242e63f39?w=800",
-    ],
-    features: ["Double Bed", "WiFi", "TV", "Air Conditioning"],
-    price: 150,
-    available: true,
-  },
-  {
-    id: "202",
-    roomNumber: "202",
-    name: "Standard Room",
-    images: [
-      "https://images.unsplash.com/photo-1598928506311-c55ded91a20c?w=800",
-      "https://images.unsplash.com/photo-1595526114035-0d45ed16cfbf?w=800",
-    ],
-    features: ["Double Bed", "WiFi", "TV", "Air Conditioning"],
-    price: 150,
-    available: true,
-  },
-  {
-    id: "205",
-    roomNumber: "205",
-    name: "Standard Room",
-    images: [
-      "https://images.unsplash.com/photo-1631049035182-249067d7618e?w=800",
-    ],
-    features: ["Twin Beds", "WiFi", "TV", "Mini Fridge"],
-    price: 150,
-    available: false,
-  },
-  {
-    id: "301",
-    roomNumber: "301",
-    name: "Ocean View Deluxe",
-    images: [
-      "https://images.unsplash.com/photo-1571896349842-33c89424de2d?w=800",
-      "https://images.unsplash.com/photo-1578683010236-d716f9a3f461?w=800",
-      "https://images.unsplash.com/photo-1445019980597-93fa8acb246c?w=800",
-    ],
-    features: ["King Bed", "Ocean View", "Balcony", "Spa Bath"],
-    price: 350,
-    available: false,
-  },
-  {
-    id: "302",
-    roomNumber: "302",
-    name: "Ocean View Deluxe",
-    images: [
-      "https://images.unsplash.com/photo-1566665797739-1674de7a421a?w=800",
-      "https://images.unsplash.com/photo-1584132915807-fd1f5fbc078f?w=800",
-    ],
-    features: ["King Bed", "Ocean View", "Balcony", "Spa Bath"],
-    price: 350,
-    available: true,
-  },
-  {
-    id: "401",
-    roomNumber: "401",
-    name: "Penthouse Suite",
-    images: [
-      "https://images.unsplash.com/photo-1591088398332-8a7791972843?w=800",
-      "https://images.unsplash.com/photo-1512918728675-ed5a9ecdebfd?w=800",
-      "https://images.unsplash.com/photo-1629140727571-9b5c6f6267b4?w=800",
-    ],
-    features: [
-      "Master Bedroom",
-      "Living Room",
-      "Private Terrace",
-      "Jacuzzi",
-      "Premium Bar",
-    ],
-    price: 500,
-    available: true,
-  },
-];
+// Static data removed
 
 const Rooms = () => {
-  const [rooms, setRooms] = useState(initialRooms);
   const [searchQuery, setSearchQuery] = useState("");
   const [availability, setAvailability] = useState<string>("all");
+
+  const queryClient = useQueryClient();
+
+  const { data: rooms = [], isLoading, error } = useQuery({
+    queryKey: ["rooms"],
+    queryFn: fetchRooms,
+  });
+
+  const mutation = useMutation({
+    mutationFn: registerRoomWithImages,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["rooms"] });
+      toast.success("Room registered successfully!");
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || "Failed to register room");
+    },
+  });
 
   const statusColors = {
     available: "gradient-primary text-primary-foreground shadow-md",
@@ -140,44 +57,67 @@ const Rooms = () => {
   };
 
   const handleAddRoom = (newRoom: {
-    name: string;
-    type: string;
-    capacity: number;
+    room_Type: string;
+    room_NO: string;
+    features: string[];
     price: number;
-    roomNumber: string;
+    maxAdults: number;
+    maxChildren: number;
+    bedCount: number;
+    images: string[];
   }) => {
-    const room = {
-      id: newRoom.roomNumber,
-      roomNumber: newRoom.roomNumber,
-      name: newRoom.name,
-      images: [
-        "https://images.unsplash.com/photo-1611892440504-42a792e24d32?w=800",
-      ],
-      features: ["WiFi", "TV", "Air Conditioning"],
+    mutation.mutate({
+      roomType: newRoom.room_Type,
+      features: newRoom.features,
+      maxAdults: newRoom.maxAdults,
+      maxChildren: newRoom.maxChildren,
+      bedCount: newRoom.bedCount,
       price: newRoom.price,
-      available: true,
-    };
-    setRooms([...rooms, room]);
+    });
   };
 
   const filteredRooms = useMemo(() => {
-    const matchesSearch = (r: (typeof rooms)[number]) => {
+    const matchesSearch = (r: RoomData) => {
       if (!searchQuery.trim()) return true;
       const q = searchQuery.toLowerCase();
       return (
-        r.name.toLowerCase().includes(q) ||
-        r.roomNumber.toLowerCase().includes(q) ||
+        r.room_Type.toLowerCase().includes(q) ||
+        r.room_NO.toString().includes(q) ||
         r.features.some((f) => f.toLowerCase().includes(q))
       );
     };
-    const matchesAvailability = (r: (typeof rooms)[number]) => {
+    const matchesAvailability = (r: RoomData) => {
       if (availability === "all") return true;
-      if (availability === "available") return r.available;
-      if (availability === "occupied") return !r.available;
+      if (availability === "available") return r.availability;
+      if (availability === "occupied") return !r.availability;
       return true;
     };
     return rooms.filter((r) => matchesSearch(r) && matchesAvailability(r));
   }, [rooms, searchQuery, availability]);
+
+  if (isLoading) {
+    return (
+      <div className="space-y-8 animate-fade-in p-8">
+        <Skeleton className="h-12 w-64 mb-8" />
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {[1, 2, 3].map((i) => (
+            <Skeleton key={i} className="h-[400px] w-full rounded-xl" />
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="p-8">
+        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl">
+          <p className="font-bold">Error loading rooms</p>
+          <p>{error instanceof Error ? error.message : "An unknown error occurred"}</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-8 animate-fade-in">
@@ -226,13 +166,13 @@ const Rooms = () => {
         <Card className="p-5 flex items-center gap-3 border-primary/20 bg-gradient-to-r from-primary/10 to-primary/5 hover:shadow-lg transition-all duration-300">
           <div className="w-3 h-3 rounded-full gradient-primary shadow-glow"></div>
           <span className="text-sm font-bold tracking-tight">
-            Available: {filteredRooms.filter((r) => r.available).length}
+            Available: {filteredRooms.filter((r) => r.availability).length}
           </span>
         </Card>
         <Card className="p-5 flex items-center gap-3 border-destructive/20 bg-gradient-to-r from-destructive/10 to-destructive/5 hover:shadow-lg transition-all duration-300">
           <div className="w-3 h-3 rounded-full bg-destructive shadow-md"></div>
           <span className="text-sm font-bold tracking-tight">
-            Occupied: {filteredRooms.filter((r) => !r.available).length}
+            Occupied: {filteredRooms.filter((r) => !r.availability).length}
           </span>
         </Card>
         <Card className="p-5 flex items-center gap-3 border-border/20 bg-gradient-to-r from-muted to-muted/50 hover:shadow-lg transition-all duration-300">
@@ -245,7 +185,7 @@ const Rooms = () => {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {filteredRooms.map((room, index) => (
           <Card
-            key={room.id}
+            key={room.room_ID}
             className="group overflow-hidden hover:shadow-xl transition-all duration-300 border-border/50 bg-gradient-to-br from-card to-card/80 backdrop-blur animate-fade-in"
             style={{ animationDelay: `${index * 50}ms` }}
           >
@@ -257,7 +197,7 @@ const Rooms = () => {
                       <div className="relative h-48 w-full overflow-hidden">
                         <img
                           src={image}
-                          alt={`${room.name} - View ${idx + 1}`}
+                          alt={`${room.room_Type} - View ${idx + 1}`}
                           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                         />
                         <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
@@ -276,22 +216,22 @@ const Rooms = () => {
               <Badge
                 className={cn(
                   "absolute top-3 right-3 px-3 py-1.5 font-semibold tracking-wide shadow-lg",
-                  room.available
+                  room.availability
                     ? "gradient-primary text-primary-foreground shadow-glow"
                     : "bg-destructive text-destructive-foreground"
                 )}
               >
-                {room.available ? "Available" : "Occupied"}
+                {room.availability ? "Available" : "Occupied"}
               </Badge>
             </div>
 
             <div className="p-6 space-y-4">
               <div>
                 <h3 className="text-xl font-bold text-foreground mb-1 tracking-tight">
-                  {room.name}
+                  {room.room_Type}
                 </h3>
                 <p className="text-sm text-muted-foreground font-semibold">
-                  Room {room.roomNumber}
+                  Room {room.room_NO}
                 </p>
               </div>
 

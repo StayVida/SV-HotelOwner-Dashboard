@@ -1,5 +1,5 @@
 import { NavLink } from "react-router-dom";
-import { Home, Calendar, BedDouble, ListChecks, Hotel, Wallet, ScanLine, X, LogOut, User2 } from "lucide-react";
+import { Home, Calendar, BedDouble, ListChecks, Hotel, Wallet, ScanLine, X, LogOut, User2, Users } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/context/AuthContext";
@@ -13,9 +13,8 @@ interface SidebarProps {
 const navItems = [
   { title: "Dashboard", url: "/", icon: Home },
   { title: "Bookings", url: "/bookings", icon: ListChecks },
+  { title: "Checked In", url: "/active-bookings", icon: Users },
   { title: "Rooms", url: "/rooms", icon: BedDouble },
-  { title: "Calendar", url: "/calendar", icon: Calendar },
-  { title: "Scanner", url: "/scanner", icon: ScanLine },
   { title: "Wallet", url: "/wallet", icon: Wallet },
   { title: "Profile", url: "/profile", icon: User2 },
 ];
