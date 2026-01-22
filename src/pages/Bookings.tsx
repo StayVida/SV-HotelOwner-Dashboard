@@ -58,9 +58,9 @@ const Bookings = () => {
           case "checkin-desc":
             return new Date(b.checkIn).getTime() - new Date(a.checkIn).getTime();
           case "amount-desc":
-            return b["Gross Amount"] - a["Gross Amount"];
+            return b["gross amount"] - a["gross amount"];
           case "amount-asc":
-            return a["Gross Amount"] - b["Gross Amount"];
+            return a["gross amount"] - b["gross amount"];
           default:
             return 0;
         }
@@ -102,7 +102,7 @@ const Bookings = () => {
   }
 
   return (
-    <div className="space-y-8 animate-fade-in pb-20">
+    <div className="space-y-6 sm:space-y-8 animate-fade-in pb-24">
         <BookingsHeader />
 
         <BookingsFilter 
@@ -116,10 +116,10 @@ const Bookings = () => {
             setSortBy={setSortBy}
         />
 
-        <div className="grid gap-5">
+        <div className="grid gap-4 sm:gap-6">
           {filteredAndSorted.length === 0 && (
-            <Card className="p-10 text-center border-dashed border-border/60">
-              <p className="text-lg font-semibold text-foreground">No bookings found</p>
+            <Card className="p-8 sm:p-12 text-center border-dashed border-border/60 bg-accent/5">
+              <p className="text-lg font-bold text-foreground">No bookings found</p>
               <p className="text-sm text-muted-foreground mt-2">Try adjusting your search or filters.</p>
             </Card>
           )}

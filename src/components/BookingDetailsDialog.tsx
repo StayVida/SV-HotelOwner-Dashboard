@@ -53,7 +53,7 @@ export function BookingDetailsDialog({ booking, open, onOpenChange }: BookingDet
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[700px] bg-gradient-to-br from-card to-card/80 border-border/50 backdrop-blur h-[90vh] overflow-y-auto">
+      <DialogContent className="w-[95vw] sm:max-w-[700px] bg-gradient-to-br from-card to-card/80 border-border/50 backdrop-blur max-h-[90vh] overflow-y-auto p-4 sm:p-6">
         {isLoading ? (
           <div className="space-y-6">
              <Skeleton className="h-40 w-full rounded-2xl" />
@@ -72,24 +72,24 @@ export function BookingDetailsDialog({ booking, open, onOpenChange }: BookingDet
           <>
             <BookingDialogHeader booking={bookingDetails} />
 
-            <div className="space-y-6 mt-2">
+            <div className="space-y-6 mt-4">
               <BookingGuestInfo booking={bookingDetails} />
-              <Separator className="my-2" />
+              <Separator />
               <BookingStayInfo booking={bookingDetails} />
             </div>
 
-            <DialogFooter className="mt-6 flex flex-wrap gap-2 sm:justify-between items-center">
-              <div className="flex gap-2">
+            <DialogFooter className="mt-8 flex flex-col sm:flex-row gap-3 sm:justify-between items-center border-t border-border/50 pt-6">
+              <div className="flex w-full sm:w-auto gap-2">
                 <DialogClose asChild>
-                  <Button variant="outline">Close</Button>
+                  <Button variant="outline" className="flex-1 sm:flex-none">Close</Button>
                 </DialogClose>
-                <Button className="gradient-primary" variant="secondary">Print / Save</Button>
+                <Button className="gradient-primary flex-1 sm:flex-none" variant="secondary">Print / Save</Button>
               </div>
 
-              <div className="flex gap-2">
+              <div className="flex w-full sm:w-auto gap-2">
                 {bookingDetails.booking_Status === "Confirmed" && (
                   <Button 
-                    className="bg-green-600 hover:bg-green-700 text-white gap-2"
+                    className="flex-1 sm:w-auto bg-green-600 hover:bg-green-700 text-white gap-2"
                     onClick={() => handleStatusUpdate("CheckIn")}
                     disabled={mutation.isPending}
                   >
@@ -100,7 +100,7 @@ export function BookingDetailsDialog({ booking, open, onOpenChange }: BookingDet
                 
                 {bookingDetails.booking_Status === "CheckIn" && (
                   <Button 
-                    className="bg-orange-600 hover:bg-orange-700 text-white gap-2"
+                    className="flex-1 sm:w-auto bg-orange-600 hover:bg-orange-700 text-white gap-2"
                     onClick={() => handleStatusUpdate("CheckOut")}
                     disabled={mutation.isPending}
                   >

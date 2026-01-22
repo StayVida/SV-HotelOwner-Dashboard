@@ -31,27 +31,27 @@ export const BookingsFilter = ({
   setSortBy,
 }: BookingsFilterProps) => {
   return (
-    <Card className="p-4 md:p-5 border-border/50 bg-gradient-to-br from-card to-card/80 backdrop-blur">
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-3 md:gap-4">
-        <div className="relative">
+    <Card className="p-4 sm:p-5 border-border/50 bg-gradient-to-br from-card to-card/80 backdrop-blur">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
+        <div className="relative sm:col-span-2 lg:col-span-1">
           <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
           <Input
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Search by name, booking ID"
-            className="pl-9"
+            placeholder="Search bookings..."
+            className="pl-9 h-10 sm:h-11"
           />
         </div>
 
         <Select value={statusFilter} onValueChange={setStatusFilter}>
-          <SelectTrigger className="">
+          <SelectTrigger className="h-10 sm:h-11">
             <div className="inline-flex items-center gap-2">
               <Filter className="w-4 h-4 opacity-60" />
               <SelectValue placeholder="Booking Status" />
             </div>
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">All Booking Status</SelectItem>
+            <SelectItem value="all">All Status</SelectItem>
             <SelectItem value="Confirmed">Confirmed</SelectItem>
             <SelectItem value="Pending">Pending</SelectItem>
             <SelectItem value="CheckIn">CheckIn</SelectItem>
@@ -61,14 +61,14 @@ export const BookingsFilter = ({
         </Select>
 
         <Select value={paymentStatusFilter} onValueChange={setPaymentStatusFilter}>
-          <SelectTrigger className="">
+          <SelectTrigger className="h-10 sm:h-11">
             <div className="inline-flex items-center gap-2">
               <Filter className="w-4 h-4 opacity-60" />
               <SelectValue placeholder="Payment Status" />
             </div>
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">All Payment Status</SelectItem>
+            <SelectItem value="all">All Payment</SelectItem>
             <SelectItem value="Completed">Completed</SelectItem>
             <SelectItem value="Pending">Pending</SelectItem>
             <SelectItem value="Failed">Failed</SelectItem>
@@ -76,17 +76,17 @@ export const BookingsFilter = ({
         </Select>
 
         <Select value={sortBy} onValueChange={setSortBy}>
-          <SelectTrigger className="">
+          <SelectTrigger className="h-10 sm:h-11">
             <div className="inline-flex items-center gap-2">
               <SortAsc className="w-4 h-4 opacity-60" />
-              <SelectValue placeholder="Sort by" />
+              <SelectValue placeholder="Sort" />
             </div>
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="checkin-asc">Check-in: earliest first</SelectItem>
-            <SelectItem value="checkin-desc">Check-in: latest first</SelectItem>
-            <SelectItem value="amount-desc">Amount: high to low</SelectItem>
-            <SelectItem value="amount-asc">Amount: low to high</SelectItem>
+            <SelectItem value="checkin-asc">Check-in: earliest</SelectItem>
+            <SelectItem value="checkin-desc">Check-in: latest</SelectItem>
+            <SelectItem value="amount-desc">Amount: high-low</SelectItem>
+            <SelectItem value="amount-asc">Amount: low-high</SelectItem>
           </SelectContent>
         </Select>
       </div>

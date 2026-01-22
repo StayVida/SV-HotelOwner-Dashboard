@@ -3,15 +3,16 @@ import { API_BASE_URL, API_key } from "../config";
 export interface BookingData {
     booking_ID: string;
     user_ID: number;
-    hotel_ID: number;
+    hotel_ID: string;
     room_ID: string;
+    RoomNumber: number;
     booking_Status: string;
     checkIn: string;
     checkOut: string;
     payment_Status: string;
     is_refundable: boolean;
-    "Gross Amount": number;
-    "Net Amount": number;
+    "gross amount": number;
+    "payment left": number;
     name: string;
     phone_number: string;
 }
@@ -54,22 +55,21 @@ export interface BookingDetailsData {
     checkIn: string;
     checkOut: string;
     payment_Status: string;
-    payment_amount: number;
-    payment_left: number;
+    payment_type?: string;
     is_refundable: boolean;
-    "Gross Amount": number;
     tax_amount: number;
     platformFee: number;
-    commission: number;
-    "Net Amount": number;
+    "Room Price": number;
+    "amount paid by customer": number;
+    "payment left to pay customer": number;
+    "gross amount to be paid by customer": number;
     user_ID: number;
     name: string;
     phone_number: string;
-    hotel_ID: number;
+    hotel_ID: string;
     hotel_name: string;
     room_ID: string;
-    room_NO: number;
-    room_Type: string;
+    RoomNumber: number;
 }
 
 interface BookingDetailsResponse {
@@ -172,18 +172,15 @@ export const fetchUpcomingBookings = async (): Promise<UpcomingBookingData[]> =>
 export interface ActiveBookingData {
     booking_ID: string;
     user_ID: number;
-    hotel_ID: number;
+    hotel_ID: string;
     room_ID: string;
     RoomNumber: number;
     booking_Status: string;
     checkIn: string;
     checkOut: string;
-    payment_left: number;
-    is_refundable: boolean;
+    payment_Status: string;
     name: string;
-    phone_number: string;
-    "Gross Amount": number;
-    "Net Amount": number;
+    "gross amount": number;
 }
 
 interface ActiveBookingsResponse {

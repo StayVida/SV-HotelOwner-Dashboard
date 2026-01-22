@@ -116,9 +116,9 @@ const ActiveBookings = () => {
                   <div className="flex items-center gap-2">
                     <CreditCard className="w-4 h-4 text-muted-foreground" />
                     <div>
-                      <p className="text-[10px] uppercase font-bold text-muted-foreground/60 leading-none mb-1">Payment Left</p>
-                      <p className={cn("text-sm font-semibold", booking.payment_left > 0 ? "text-destructive" : "text-primary")}>
-                        ₹{booking.payment_left}
+                      <p className="text-[10px] uppercase font-bold text-muted-foreground/60 leading-none mb-1">Payment Status</p>
+                      <p className={cn("text-sm font-semibold", booking.payment_Status === "Pending" ? "text-destructive" : "text-primary")}>
+                        {booking.payment_Status}
                       </p>
                     </div>
                   </div>

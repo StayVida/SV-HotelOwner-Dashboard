@@ -7,7 +7,7 @@ export interface RoomData {
     hotel_ID: string;
     features: string[];
     price: number;
-    availability: boolean;
+    Status: string;
     isEnable: boolean;
     createdAt: string;
     images: string[];
@@ -64,23 +64,39 @@ export const fetchFeatures = async (): Promise<FeatureData[]> => {
 };
 export interface RegisterRoomData {
     roomType: string;
+    room_NO: string;
     features: string[];
     maxAdults: number;
     maxChildren: number;
     bedCount: number;
     price: number;
+    images: File[];
 }
 
 export const registerRoomWithImages = async (roomData: RegisterRoomData): Promise<any> => {
     const token = localStorage.getItem("token");
-    const response = await fetch(`${API_BASE_URL}/hotels/register_room_with_images`, {
+    const { roomType, room_NO, maxAdults, maxChildren, bedCount, price, features, images } = roomData;
+
+    const formData = new FormData();
+    formData.append("roomType", roomType);
+    formData.append("roomNumber", room_NO.toString());
+    formData.append("maxAdults", maxAdults.toString());
+    formData.append("maxChildren", maxChildren.toString());
+    formData.append("bedCount", bedCount.toString());
+    formData.append("price", price.toString());
+
+    // Send features as a JSON string with double quotes
+    formData.append("features", JSON.stringify(features));
+    images.forEach(image => formData.append("images", image));
+    console.log("formData ", roomData);
+    const response = await fetch(`${API_BASE_URL}/api/hotels/register_room_with_images`, {
         method: "POST",
         headers: {
-            "Content-Type": "application/json",
             "x-api-key": API_key,
             "Authorization": `Bearer ${token}`,
+            // Content-Type is intentionally omitted for FormData
         },
-        body: JSON.stringify(roomData),
+        body: formData,
     });
 
     if (!response.ok) {

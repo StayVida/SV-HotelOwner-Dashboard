@@ -11,12 +11,12 @@ interface BookingDialogHeaderProps {
 export const BookingDialogHeader = ({ booking }: BookingDialogHeaderProps) => {
   return (
     <DialogHeader>
-      <div className="relative overflow-hidden rounded-2xl border border-border/50 p-5 bg-gradient-to-r from-accent/20 to-accent/5">
+      <div className="relative overflow-hidden rounded-2xl border border-border/50 p-4 sm:p-5 bg-gradient-to-r from-accent/20 to-accent/5">
         <div className="absolute -right-12 -top-12 w-40 h-40 bg-primary/10 rounded-full blur-3xl"></div>
-        <div className="relative z-10 flex items-center justify-between gap-4">
-          <div className="flex items-center gap-4 min-w-0">
-            <Avatar className="h-12 w-12">
-              <AvatarFallback className="text-sm font-semibold">
+        <div className="relative z-10 flex flex-col sm:flex-row items-center sm:items-center justify-between gap-4">
+          <div className="flex flex-col sm:flex-row items-center sm:items-center gap-4 text-center sm:text-left min-w-0 w-full sm:w-auto">
+            <Avatar className="h-14 w-14 sm:h-12 sm:w-12 shrink-0 border-2 border-primary/20">
+              <AvatarFallback className="text-base sm:text-sm font-bold">
                 {booking.name
                   .split(" ")
                   .map((n) => n[0])
@@ -25,22 +25,22 @@ export const BookingDialogHeader = ({ booking }: BookingDialogHeaderProps) => {
                   .toUpperCase()}
               </AvatarFallback>
             </Avatar>
-            <div className="min-w-0">
-              <DialogTitle className="text-2xl font-bold tracking-tight truncate">{booking.name}</DialogTitle>
-              <div className="flex items-center gap-2">
-                 <p className="text-sm text-muted-foreground truncate font-medium">Booking ID: {booking.booking_ID}</p>
-                  <Badge variant="outline" className="text-xs">{booking.hotel_name}</Badge>
-                  <Badge variant="outline" className="text-xs">Room: {booking.room_NO}</Badge>
+            <div className="min-w-0 w-full sm:w-auto">
+              <DialogTitle className="text-xl sm:text-2xl font-black tracking-tight truncate mb-1">{booking.name}</DialogTitle>
+              <div className="flex flex-wrap justify-center sm:justify-start items-center gap-2">
+                 <p className="text-xs sm:text-sm text-muted-foreground font-semibold">ID: {booking.booking_ID}</p>
+                  <Badge variant="outline" className="text-[10px] sm:text-xs bg-background/50 h-5 sm:h-6">{booking.hotel_name}</Badge>
+                  <Badge variant="outline" className="text-[10px] sm:text-xs bg-background/50 h-5 sm:h-6">Room: {booking.RoomNumber}</Badge>
               </div>
             </div>
           </div>
-          <div className="flex flex-col items-end gap-2">
+          <div className="w-full sm:w-auto flex justify-center sm:justify-end">
             <Badge
                 className={cn(
-                "px-4 py-1.5 font-semibold tracking-wide",
+                "px-5 py-2 font-bold tracking-wider text-xs sm:text-sm uppercase w-full sm:w-auto text-center justify-center",
                 booking.booking_Status === "Confirmed" || booking.booking_Status === "CheckIn"
-                    ? "gradient-primary text-primary-foreground shadow-md" 
-                    : "bg-yellow-500 text-white shadow-md"
+                    ? "gradient-primary text-primary-foreground shadow-lg" 
+                    : "bg-yellow-500 text-white shadow-lg"
                 )}
             >
                 {booking.booking_Status}

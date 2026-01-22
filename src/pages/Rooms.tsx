@@ -64,15 +64,17 @@ const Rooms = () => {
     maxAdults: number;
     maxChildren: number;
     bedCount: number;
-    images: string[];
+    images: File[];
   }) => {
     mutation.mutate({
       roomType: newRoom.room_Type,
+      room_NO: newRoom.room_NO,
       features: newRoom.features,
       maxAdults: newRoom.maxAdults,
       maxChildren: newRoom.maxChildren,
       bedCount: newRoom.bedCount,
       price: newRoom.price,
+      images: newRoom.images,
     });
   };
 
@@ -88,8 +90,8 @@ const Rooms = () => {
     };
     const matchesAvailability = (r: RoomData) => {
       if (availability === "all") return true;
-      if (availability === "available") return r.availability;
-      if (availability === "occupied") return !r.availability;
+      if (availability === "available") return r.Status === "Available";
+      if (availability === "occupied") return r.Status === "Occupied";
       return true;
     };
     return rooms.filter((r) => matchesSearch(r) && matchesAvailability(r));
@@ -120,65 +122,65 @@ const Rooms = () => {
   }
 
   return (
-    <div className="space-y-8 animate-fade-in">
-      <div className="flex items-start justify-between gap-4">
-        <div className="relative flex-1">
-          <div className="absolute -top-16 -left-16 w-48 h-48 bg-primary/5 rounded-full blur-3xl"></div>
-          <div className="relative z-10">
-            <h2 className="text-4xl font-bold text-foreground mb-2 tracking-tight">
-              Room Management
-            </h2>
-            <p className="text-muted-foreground text-lg font-medium">
-              Overview of all rooms and their current status
-            </p>
-          </div>
+    <div className="space-y-6 sm:space-y-8 animate-fade-in">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6 sm:gap-4 relative">
+        <div className="absolute -top-16 -left-16 w-32 h-32 sm:w-48 sm:h-48 bg-primary/5 rounded-full blur-3xl text-center sm:text-left"></div>
+        <div className="relative z-10 space-y-1 text-center sm:text-left w-full sm:w-auto">
+          <h2 className="text-3xl sm:text-4xl font-bold text-foreground tracking-tight">
+            Room Management
+          </h2>
+          <p className="text-muted-foreground text-sm sm:text-lg font-medium max-w-md mx-auto sm:mx-0">
+            Overview of all rooms and their current status
+          </p>
         </div>
-        <AddRoomDialog onAddRoom={handleAddRoom} />
+        <div className="relative z-10 w-full sm:w-auto flex justify-center sm:justify-end">
+          <AddRoomDialog onAddRoom={handleAddRoom} />
+        </div>
       </div>
 
-      <Card className="p-4 shadow-lg border-border/50 bg-gradient-to-br from-card to-card/80 backdrop-blur">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-3 md:gap-4">
-          <div className="relative">
+      <Card className="p-4 sm:p-5 shadow-lg border-border/50 bg-gradient-to-br from-card to-card/80 backdrop-blur">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
+          <div className="relative sm:col-span-2 lg:col-span-1">
             <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
             <Input
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search by name, number, or feature"
-              className="pl-9"
+              placeholder="Search rooms..."
+              className="pl-9 h-10 sm:h-11"
             />
           </div>
           <Select value={availability} onValueChange={setAvailability}>
-            <SelectTrigger>
+            <SelectTrigger className="h-10 sm:h-11">
               <div className="inline-flex items-center gap-2">
                 <Filter className="w-4 h-4 opacity-60" />
                 <SelectValue placeholder="Availability" />
               </div>
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">All</SelectItem>
+              <SelectItem value="all">All Availability</SelectItem>
               <SelectItem value="available">Available</SelectItem>
               <SelectItem value="occupied">Occupied</SelectItem>
             </SelectContent>
           </Select>
         </div>
       </Card>
-      <div className="flex gap-5 flex-wrap w-full">
-        <Card className="p-5 flex items-center gap-3 border-primary/20 bg-gradient-to-r from-primary/10 to-primary/5 hover:shadow-lg transition-all duration-300">
-          <div className="w-3 h-3 rounded-full gradient-primary shadow-glow"></div>
-          <span className="text-sm font-bold tracking-tight">
-            Available: {filteredRooms.filter((r) => r.availability).length}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 w-full">
+        <Card className="p-4 flex items-center gap-3 border-primary/20 bg-gradient-to-r from-primary/10 to-primary/5 hover:shadow-lg transition-all duration-300">
+          <div className="w-2.5 h-2.5 rounded-full gradient-primary shadow-glow shrink-0"></div>
+          <span className="text-xs sm:text-sm font-bold tracking-tight">
+            Available: {filteredRooms.filter((r) => r.Status === "Available").length}
           </span>
         </Card>
-        <Card className="p-5 flex items-center gap-3 border-destructive/20 bg-gradient-to-r from-destructive/10 to-destructive/5 hover:shadow-lg transition-all duration-300">
-          <div className="w-3 h-3 rounded-full bg-destructive shadow-md"></div>
-          <span className="text-sm font-bold tracking-tight">
-            Occupied: {filteredRooms.filter((r) => !r.availability).length}
+        <Card className="p-4 flex items-center gap-3 border-destructive/20 bg-gradient-to-r from-destructive/10 to-destructive/5 hover:shadow-lg transition-all duration-300">
+          <div className="w-2.5 h-2.5 rounded-full bg-destructive shadow-md shrink-0"></div>
+          <span className="text-xs sm:text-sm font-bold tracking-tight">
+            Occupied: {filteredRooms.filter((r) => r.Status === "Occupied").length}
           </span>
         </Card>
-        <Card className="p-5 flex items-center gap-3 border-border/20 bg-gradient-to-r from-muted to-muted/50 hover:shadow-lg transition-all duration-300">
-          <div className="w-3 h-3 rounded-full bg-muted-foreground shadow-md"></div>
-          <span className="text-sm font-bold tracking-tight">
-            Total: {filteredRooms.length}
+        <Card className="p-4 flex items-center gap-3 border-border/20 bg-gradient-to-r from-muted to-muted/50 hover:shadow-lg transition-all duration-300">
+          <div className="w-2.5 h-2.5 rounded-full bg-muted-foreground shadow-md shrink-0"></div>
+          <span className="text-xs sm:text-sm font-bold tracking-tight">
+            Total Rooms: {rooms.length}
           </span>
         </Card>
       </div>
@@ -216,47 +218,50 @@ const Rooms = () => {
               <Badge
                 className={cn(
                   "absolute top-3 right-3 px-3 py-1.5 font-semibold tracking-wide shadow-lg",
-                  room.availability
+                  room.Status === "Available"
                     ? "gradient-primary text-primary-foreground shadow-glow"
                     : "bg-destructive text-destructive-foreground"
                 )}
               >
-                {room.availability ? "Available" : "Occupied"}
+                {room.Status}
               </Badge>
             </div>
 
-            <div className="p-6 space-y-4">
+            <div className="p-5 sm:p-6 space-y-4">
               <div>
-                <h3 className="text-xl font-bold text-foreground mb-1 tracking-tight">
+                <h3 className="text-lg sm:text-xl font-bold text-foreground mb-1 tracking-tight truncate">
                   {room.room_Type}
                 </h3>
-                <p className="text-sm text-muted-foreground font-semibold">
-                  Room {room.room_NO}
+                <p className="text-xs sm:text-sm text-muted-foreground font-semibold uppercase tracking-wider">
+                  Room NO: {room.room_NO}
                 </p>
               </div>
 
               <div className="flex items-center justify-between">
-                <div className="font-bold text-primary text-2xl">
-                  ${room.price}
+                <div className="font-extrabold text-primary text-xl sm:text-2xl">
+                  ₹{room.price}
                 </div>
-                <span className="text-sm text-muted-foreground font-medium">
+                <span className="text-[10px] sm:text-xs text-muted-foreground font-bold uppercase tracking-widest">
                   per night
                 </span>
               </div>
 
-              <div className="flex flex-wrap gap-2">
-                {room.features.map((feature, idx) => (
+              <div className="flex flex-wrap gap-1.5 pt-1">
+                {room.features.slice(0, 4).map((feature, idx) => (
                   <Badge
                     key={idx}
                     variant="secondary"
-                    className="text-xs font-semibold px-3 py-1"
+                    className="text-[10px] sm:text-xs font-bold px-2 py-0.5 bg-accent/50 text-accent-foreground"
                   >
                     {feature}
                   </Badge>
                 ))}
+                {room.features.length > 4 && (
+                  <Badge variant="outline" className="text-[10px] font-bold">+{room.features.length - 4}</Badge>
+                )}
               </div>
 
-              <Button className="w-full gap-2 font-semibold" variant="outline">
+              <Button className="w-full gap-2 font-bold h-11 sm:h-12 shadow-md hover:shadow-glow transition-all" variant="outline">
                 <Settings className="w-4 h-4" />
                 Manage Room
               </Button>
