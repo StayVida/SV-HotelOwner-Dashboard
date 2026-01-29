@@ -2,7 +2,7 @@ import { useMemo, useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { BedDouble, Users, Settings, Search, Filter } from "lucide-react";
+import { BedDouble, Users, Settings, Search, Filter, Trash2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { AddRoomDialog } from "@/components/AddRoomDialog";
 import {
@@ -21,16 +21,30 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { fetchRooms, RoomData, registerRoomWithImages } from "@/api/rooms";
+import { fetchRooms, RoomData, registerRoomWithImages, updateRoom, deleteRoom } from "@/api/rooms";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { toast } from "sonner";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 // Static data removed
 
 const Rooms = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [availability, setAvailability] = useState<string>("all");
+  const [editingRoom, setEditingRoom] = useState<RoomData | null>(null);
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [roomToDelete, setRoomToDelete] = useState<{ roomId: string; hotelId: string } | null>(null);
+  const [isConfirmOpen, setIsConfirmOpen] = useState(false);
 
   const queryClient = useQueryClient();
 
@@ -44,9 +58,36 @@ const Rooms = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["rooms"] });
       toast.success("Room registered successfully!");
+      setIsDialogOpen(false);
     },
     onError: (error: Error) => {
       toast.error(error.message || "Failed to register room");
+    },
+  });
+
+  const updateMutation = useMutation({
+    mutationFn: ({ roomId, data }: { roomId: string; data: any }) => updateRoom(roomId, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["rooms"] });
+      toast.success("Room updated successfully!");
+      setEditingRoom(null);
+      setIsDialogOpen(false);
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || "Failed to update room");
+    },
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: ({ roomId, hotelId }: { roomId: string; hotelId: string }) => deleteRoom(roomId, hotelId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["rooms"] });
+      toast.success("Room deleted successfully!");
+      setIsConfirmOpen(false);
+      setRoomToDelete(null);
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || "Failed to delete room");
     },
   });
 
@@ -76,6 +117,43 @@ const Rooms = () => {
       price: newRoom.price,
       images: newRoom.images,
     });
+  };
+
+  const handleUpdateRoom = (roomId: string, updatedData: any) => {
+    updateMutation.mutate({
+      roomId,
+      data: {
+        roomType: updatedData.room_Type,
+        room_NO: updatedData.room_NO,
+        features: updatedData.features,
+        maxAdults: updatedData.maxAdults,
+        maxChildren: updatedData.maxChildren,
+        bedCount: updatedData.bedCount,
+        price: updatedData.price,
+        images: updatedData.images,
+      },
+    });
+  };
+
+  const handleDeleteRoom = (roomId: string, hotelId: string) => {
+    setRoomToDelete({ roomId, hotelId });
+    setIsConfirmOpen(true);
+  };
+
+  const confirmDelete = () => {
+    if (roomToDelete) {
+      deleteMutation.mutate(roomToDelete);
+    }
+  };
+
+  const openAddDialog = () => {
+    setEditingRoom(null);
+    setIsDialogOpen(true);
+  };
+
+  const openEditDialog = (room: RoomData) => {
+    setEditingRoom(room);
+    setIsDialogOpen(true);
   };
 
   const filteredRooms = useMemo(() => {
@@ -134,7 +212,13 @@ const Rooms = () => {
           </p>
         </div>
         <div className="relative z-10 w-full sm:w-auto flex justify-center sm:justify-end">
-          <AddRoomDialog onAddRoom={handleAddRoom} />
+          <AddRoomDialog 
+            onAddRoom={handleAddRoom} 
+            onUpdateRoom={handleUpdateRoom}
+            editingRoom={editingRoom}
+            open={isDialogOpen}
+            onOpenChange={setIsDialogOpen}
+          />
         </div>
       </div>
 
@@ -225,6 +309,18 @@ const Rooms = () => {
               >
                 {room.Status}
               </Badge>
+
+              <Button
+                variant="destructive"
+                size="icon"
+                className="absolute top-3 left-3 h-8 w-8 rounded-full opacity-0 group-hover:opacity-100 transition-opacity shadow-lg"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleDeleteRoom(room.room_ID, room.hotel_ID);
+                }}
+              >
+                <Trash2 className="h-4 w-4" />
+              </Button>
             </div>
 
             <div className="p-5 sm:p-6 space-y-4">
@@ -261,7 +357,11 @@ const Rooms = () => {
                 )}
               </div>
 
-              <Button className="w-full gap-2 font-bold h-11 sm:h-12 shadow-md hover:shadow-glow transition-all" variant="outline">
+              <Button 
+                className="w-full gap-2 font-bold h-11 sm:h-12 shadow-md hover:shadow-glow transition-all" 
+                variant="outline"
+                onClick={() => openEditDialog(room)}
+              >
                 <Settings className="w-4 h-4" />
                 Manage Room
               </Button>
@@ -269,6 +369,27 @@ const Rooms = () => {
           </Card>
         ))}
       </div>
+      <AlertDialog open={isConfirmOpen} onOpenChange={setIsConfirmOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This action cannot be undone. This will permanently delete the room
+              from the system.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={confirmDelete}
+              disabled={deleteMutation.isPending}
+            >
+              {deleteMutation.isPending ? "Deleting..." : "Delete Room"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };

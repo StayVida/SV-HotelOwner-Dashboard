@@ -115,7 +115,7 @@ export const EditHotelProfileDialog = ({ hotel }: EditHotelProfileDialogProps) =
       remark: hotel.remark || "",
       tags: hotel.tags || [],
       amenities: hotel.amenities || [],
-    //   features: hotel.features || [],
+      features: hotel.features || [],
       images: hotel.images || [],
     },
   });
@@ -152,17 +152,15 @@ export const EditHotelProfileDialog = ({ hotel }: EditHotelProfileDialogProps) =
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
-    if (!files) return;
+    if (!files || files.length === 0) return;
 
-    Array.from(files).forEach((file) => {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        const result = reader.result as string;
-        const currentImages = form.getValues("images") || [];
-        form.setValue("images", [...currentImages, result], { shouldDirty: true });
-      };
-      reader.readAsDataURL(file);
-    });
+    const file = files[0];
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      const result = reader.result as string;
+      form.setValue("images", [result], { shouldDirty: true });
+    };
+    reader.readAsDataURL(file);
   };
 
   const removeImage = (index: number) => {
@@ -206,37 +204,42 @@ export const EditHotelProfileDialog = ({ hotel }: EditHotelProfileDialogProps) =
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
             {/* Image Upload Section */}
             <div className="space-y-3">
-              <Label className="font-semibold text-base">Hotel Images</Label>
+              <Label className="font-semibold text-base">Hotel Image (Single)</Label>
               <div className="grid grid-cols-4 gap-4">
-                {watchedImages.map((img, idx) => (
-                  <div key={idx} className="relative group aspect-square rounded-lg overflow-hidden border border-border/50">
-                    <img src={formatImageSrc(img)} alt="Preview" className="w-full h-full object-cover" />
-                    <button
-                      type="button"
-                      onClick={() => removeImage(idx)}
-                      className="absolute top-1 right-1 p-1 bg-destructive text-destructive-foreground rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
-                    >
-                      <X className="w-3 h-3" />
-                    </button>
-                  </div>
-                ))}
-                <button
-                  type="button"
-                  onClick={() => fileInputRef.current?.click()}
-                  className="flex flex-col items-center justify-center aspect-square rounded-lg border-2 border-dashed border-border/50 hover:border-primary/50 transition-colors bg-muted/30"
-                >
-                  <Upload className="w-6 h-6 text-muted-foreground mb-1" />
-                  <span className="text-xs text-muted-foreground font-medium">Upload</span>
-                </button>
+                {watchedImages.length > 0 ? (
+                  watchedImages.map((img, idx) => (
+                    <div key={idx} className="relative group aspect-square rounded-lg overflow-hidden border border-border/50">
+                      <img src={formatImageSrc(img)} alt="Preview" className="w-full h-full object-cover" />
+                      <button
+                        type="button"
+                        onClick={() => removeImage(idx)}
+                        className="absolute top-1 right-1 p-1 bg-destructive text-destructive-foreground rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                      >
+                        <X className="w-3 h-3" />
+                      </button>
+                    </div>
+                  ))
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => fileInputRef.current?.click()}
+                    className="flex flex-col items-center justify-center aspect-square rounded-lg border-2 border-dashed border-border/50 hover:border-primary/50 transition-colors bg-muted/30"
+                  >
+                    <Upload className="w-6 h-6 text-muted-foreground mb-1" />
+                    <span className="text-xs text-muted-foreground font-medium">Upload</span>
+                  </button>
+                )}
               </div>
               <input
                 type="file"
                 ref={fileInputRef}
                 onChange={handleImageUpload}
-                multiple
                 accept="image/*"
                 className="hidden"
               />
+              <FormDescription>
+                Please upload only one high-quality image of your hotel.
+              </FormDescription>
             </div>
 
             <div className="grid grid-cols-2 gap-4">
@@ -311,7 +314,7 @@ export const EditHotelProfileDialog = ({ hotel }: EditHotelProfileDialogProps) =
                 )}
               />
               <div className="grid grid-cols-2 gap-2">
-                {/* <FormField
+                <FormField
                   control={form.control}
                   name="latitude"
                   render={({ field }) => (
@@ -323,8 +326,8 @@ export const EditHotelProfileDialog = ({ hotel }: EditHotelProfileDialogProps) =
                       <FormMessage />
                     </FormItem>
                   )}
-                /> */}
-                {/* <FormField
+                />
+                <FormField
                   control={form.control}
                   name="longitude"
                   render={({ field }) => (
@@ -336,7 +339,7 @@ export const EditHotelProfileDialog = ({ hotel }: EditHotelProfileDialogProps) =
                       <FormMessage />
                     </FormItem>
                   )}
-                /> */}
+                />
               </div>
             </div>
 

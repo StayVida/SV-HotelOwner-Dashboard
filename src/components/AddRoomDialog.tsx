@@ -1,14 +1,11 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Plus, X, Upload, Check } from "lucide-react";
 import { toast } from "sonner";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
-import { cn } from "@/lib/utils";
 import { useQuery } from "@tanstack/react-query";
 import { fetchFeatures } from "@/api/rooms";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -27,12 +24,36 @@ interface AddRoomDialogProps {
     bedCount: number;
     images: File[];
   }) => void;
+  onUpdateRoom?: (roomId: string, room: {
+    room_Type: string;
+    room_NO: string;
+    features: string[];
+    price: number;
+    maxAdults: number;
+    maxChildren: number;
+    bedCount: number;
+    images?: File[];
+  }) => void;
+  editingRoom?: {
+    room_ID: string;
+    room_NO: number;
+    room_Type: string;
+    features: string[];
+    price: number;
+    maxAdults?: number;
+    maxChildren?: number;
+    bedCount?: number;
+    images: string[];
+  } | null;
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
 }
 
-// Static features removed
+export function AddRoomDialog({ onAddRoom, onUpdateRoom, editingRoom, open: controlledOpen, onOpenChange }: AddRoomDialogProps) {
+  const [internalOpen, setInternalOpen] = useState(false);
+  const open = controlledOpen !== undefined ? controlledOpen : internalOpen;
+  const setOpen = onOpenChange !== undefined ? onOpenChange : setInternalOpen;
 
-export function AddRoomDialog({ onAddRoom }: AddRoomDialogProps) {
-  const [open, setOpen] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [formData, setFormData] = useState({
     room_Type: "",
@@ -46,7 +67,35 @@ export function AddRoomDialog({ onAddRoom }: AddRoomDialogProps) {
     previews: [] as string[],
   });
 
-  const { data: allFeatures = [], isLoading: isLoadingFeatures } = useQuery({
+  useEffect(() => {
+    if (editingRoom) {
+      setFormData({
+        room_Type: editingRoom.room_Type,
+        room_NO: editingRoom.room_NO.toString(),
+        features: editingRoom.features,
+        price: editingRoom.price,
+        maxAdults: editingRoom.maxAdults || 2,
+        maxChildren: editingRoom.maxChildren || 1,
+        bedCount: editingRoom.bedCount || 1,
+        images: [],
+        previews: editingRoom.images || [],
+      });
+    } else if (!open) {
+      setFormData({
+        room_Type: "",
+        room_NO: "",
+        features: [],
+        price: 150,
+        maxAdults: 2,
+        maxChildren: 1,
+        bedCount: 1,
+        images: [],
+        previews: [],
+      });
+    }
+  }, [editingRoom, open]);
+
+  const { data: allFeatures = [] } = useQuery({
     queryKey: ["features"],
     queryFn: fetchFeatures,
   });
@@ -69,8 +118,9 @@ export function AddRoomDialog({ onAddRoom }: AddRoomDialogProps) {
 
   const removeImage = (index: number) => {
     setFormData(prev => {
-      // Clean up the object URL to avoid memory leaks
-      URL.revokeObjectURL(prev.previews[index]);
+      if (prev.previews[index].startsWith("blob:")) {
+        URL.revokeObjectURL(prev.previews[index]);
+      }
       
       return {
         ...prev,
@@ -97,59 +147,57 @@ export function AddRoomDialog({ onAddRoom }: AddRoomDialogProps) {
       return;
     }
 
-    if (formData.images.length === 0) {
-      toast.error("Please upload at least one image");
-      return;
+    if (editingRoom && onUpdateRoom) {
+      onUpdateRoom(editingRoom.room_ID, {
+        room_Type: formData.room_Type,
+        room_NO: formData.room_NO,
+        features: formData.features,
+        price: formData.price,
+        maxAdults: formData.maxAdults,
+        maxChildren: formData.maxChildren,
+        bedCount: formData.bedCount,
+        images: formData.images.length > 0 ? formData.images : undefined,
+      });
+      setOpen(false);
+    } else {
+      if (formData.images.length === 0) {
+        toast.error("Please upload at least one image");
+        return;
+      }
+      onAddRoom({
+        room_Type: formData.room_Type,
+        room_NO: formData.room_NO,
+        features: formData.features,
+        price: formData.price,
+        maxAdults: formData.maxAdults,
+        maxChildren: formData.maxChildren,
+        bedCount: formData.bedCount,
+        images: formData.images,
+      });
+      setOpen(false);
     }
-
-    onAddRoom({
-      room_Type: formData.room_Type,
-      room_NO: formData.room_NO,
-      features: formData.features,
-      price: formData.price,
-      maxAdults: formData.maxAdults,
-      maxChildren: formData.maxChildren,
-      bedCount: formData.bedCount,
-      images: formData.images,
-    });
-    
-    toast.success("Room added successfully!");
-    
-    // Clean up all previews
-    formData.previews.forEach(url => URL.revokeObjectURL(url));
-
-    // Reset form
-    setFormData({
-      room_Type: "",
-      room_NO: "",
-      features: [],
-      price: 150,
-      maxAdults: 2,
-      maxChildren: 1,
-      bedCount: 1,
-      images: [],
-      previews: [],
-    });
-    setOpen(false);
   };
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        <Button className="gradient-primary hover:shadow-glow transition-all duration-300 font-semibold px-6 py-6 text-base">
-          <Plus className="w-5 h-5 mr-2" />
-          Add Room
-        </Button>
-      </DialogTrigger>
+      {!editingRoom && (
+        <DialogTrigger asChild>
+          <Button className="gradient-primary hover:shadow-glow transition-all duration-300 font-semibold px-6 py-6 text-base">
+            <Plus className="w-5 h-5 mr-2" />
+            Add Room
+          </Button>
+        </DialogTrigger>
+      )}
       <DialogContent className="sm:max-w-[650px] w-[95vw] sm:w-full max-h-[90vh] overflow-y-auto bg-card border-border/50 p-0 rounded-2xl sm:rounded-3xl">
         <DialogHeader className="p-6 sm:p-8 border-b border-border/30">
-          <DialogTitle className="text-2xl sm:text-3xl font-black tracking-tight text-center sm:text-left">Add New Room</DialogTitle>
+          <DialogTitle className="text-2xl sm:text-3xl font-black tracking-tight text-center sm:text-left">
+            {editingRoom ? "Edit Room" : "Add New Room"}
+          </DialogTitle>
           <DialogDescription className="sr-only">
-            Fill in the details below to add a new room to your hotel catalog.
+            Fill in the details below to add or edit a room.
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="p-6 sm:p-8 space-y-8">
-          {/* Image Upload Section */}
           <div className="space-y-4">
             <Label className="font-bold text-base sm:text-lg tracking-tight">Room Images</Label>
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 sm:gap-4">
@@ -188,7 +236,7 @@ export function AddRoomDialog({ onAddRoom }: AddRoomDialogProps) {
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 sm:gap-6">
             <div className="space-y-2.5">
-              <Label htmlFor="room_Type" className="font-bold text-sm uppercase tracking-wide">Room Type (Name) *</Label>
+              <Label htmlFor="room_Type" className="font-bold text-sm uppercase tracking-wide">Room Type *</Label>
               <Input
                 id="room_Type"
                 placeholder="e.g., Deluxe Suite"
@@ -211,16 +259,11 @@ export function AddRoomDialog({ onAddRoom }: AddRoomDialogProps) {
             </div>
           </div>
 
-          {/* Features Selection Dropdown */}
           <div className="space-y-4">
             <Label className="font-bold text-base sm:text-lg tracking-tight">Features & Amenities</Label>
             <Popover>
               <PopoverTrigger asChild>
-                <Button
-                  variant="outline"
-                  role="combobox"
-                  className="w-full justify-between border-border/50 h-auto min-h-[48px] px-4 py-2.5 rounded-xl hover:bg-muted/30 transition-colors"
-                >
+                <Button variant="outline" type="button" className="w-full justify-between border-border/50 h-auto min-h-[48px] px-4 py-2.5 rounded-xl">
                   <div className="flex flex-wrap gap-1.5 items-center">
                     {formData.features.length > 0 ? (
                       formData.features.map((f) => (
@@ -236,7 +279,7 @@ export function AddRoomDialog({ onAddRoom }: AddRoomDialogProps) {
                 </Button>
               </PopoverTrigger>
               <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0" align="start">
-                <Command className="w-full border-none">
+                <Command className="w-full">
                   <CommandInput placeholder="Search features..." className="h-11 border-b" />
                   <CommandList className="max-h-[250px] p-2">
                     <CommandEmpty>No feature found.</CommandEmpty>
@@ -245,12 +288,11 @@ export function AddRoomDialog({ onAddRoom }: AddRoomDialogProps) {
                         <CommandItem
                           key={feature.feature_id}
                           onSelect={() => toggleFeature(feature.name)}
-                          className="flex items-center gap-3 cursor-pointer p-3 rounded-lg hover:bg-muted/50 transition-colors"
+                          className="flex items-center gap-3 cursor-pointer p-3 rounded-lg"
                         >
                           <Checkbox
                             checked={formData.features.includes(feature.name)}
                             onCheckedChange={() => toggleFeature(feature.name)}
-                            className="border-border/50"
                           />
                           <span className="flex-1 font-medium">{feature.name}</span>
                           {formData.features.includes(feature.name) && (
@@ -309,7 +351,6 @@ export function AddRoomDialog({ onAddRoom }: AddRoomDialogProps) {
                 id="price"
                 type="number"
                 min="0"
-                step="10"
                 value={formData.price}
                 onChange={(e) => setFormData({ ...formData, price: parseInt(e.target.value) })}
                 className="h-12 pl-8 border-border/50 focus:border-primary text-lg font-black"
@@ -331,7 +372,7 @@ export function AddRoomDialog({ onAddRoom }: AddRoomDialogProps) {
               type="submit"
               className="flex-1 h-12 gradient-primary hover:shadow-glow transition-all duration-300 font-bold uppercase tracking-wider text-xs"
             >
-              Add Room
+              {editingRoom ? "Save Changes" : "Add Room"}
             </Button>
           </div>
         </form>

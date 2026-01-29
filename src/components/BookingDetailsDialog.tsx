@@ -34,9 +34,11 @@ export function BookingDetailsDialog({ booking, open, onOpenChange }: BookingDet
     mutationFn: ({ id, status }: { id: string; status: string }) => updateBookingStatus(id, status),
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ["bookingDetails", booking?.booking_ID] });
+      queryClient.invalidateQueries({ queryKey: ["bookings"] });
       queryClient.invalidateQueries({ queryKey: ["activeBookings"] });
       queryClient.invalidateQueries({ queryKey: ["upcomingBookings"] });
       toast.success(`Booking status updated to ${variables.status} successfully!`);
+      onOpenChange(false);
     },
     onError: (error) => {
       toast.error(`Error: ${error.message}`);
@@ -83,11 +85,10 @@ export function BookingDetailsDialog({ booking, open, onOpenChange }: BookingDet
                 <DialogClose asChild>
                   <Button variant="outline" className="flex-1 sm:flex-none">Close</Button>
                 </DialogClose>
-                <Button className="gradient-primary flex-1 sm:flex-none" variant="secondary">Print / Save</Button>
               </div>
 
               <div className="flex w-full sm:w-auto gap-2">
-                {bookingDetails.booking_Status === "Confirmed" && (
+                {(bookingDetails.booking_Status === "Confirmed" || bookingDetails.booking_Status === "Pending") && (
                   <Button 
                     className="flex-1 sm:w-auto bg-green-600 hover:bg-green-700 text-white gap-2"
                     onClick={() => handleStatusUpdate("CheckIn")}
@@ -101,7 +102,7 @@ export function BookingDetailsDialog({ booking, open, onOpenChange }: BookingDet
                 {bookingDetails.booking_Status === "CheckIn" && (
                   <Button 
                     className="flex-1 sm:w-auto bg-orange-600 hover:bg-orange-700 text-white gap-2"
-                    onClick={() => handleStatusUpdate("CheckOut")}
+                    onClick={() => handleStatusUpdate("CheckedOut")}
                     disabled={mutation.isPending}
                   >
                     {mutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : null}

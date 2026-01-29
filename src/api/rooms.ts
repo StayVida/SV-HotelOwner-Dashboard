@@ -11,6 +11,9 @@ export interface RoomData {
     isEnable: boolean;
     createdAt: string;
     images: string[];
+    maxAdults?: number;
+    maxChildren?: number;
+    bedCount?: number;
 }
 
 export interface FeatureData {
@@ -106,4 +109,54 @@ export const registerRoomWithImages = async (roomData: RegisterRoomData): Promis
     }
 
     return await response.json();
+};
+
+export const updateRoom = async (roomId: string, roomData: Partial<RegisterRoomData>): Promise<any> => {
+    const token = localStorage.getItem("token");
+    const formData = new FormData();
+
+    if (roomData.roomType) formData.append("roomType", roomData.roomType);
+    if (roomData.room_NO) formData.append("roomNumber", roomData.room_NO.toString());
+    if (roomData.maxAdults !== undefined) formData.append("maxAdults", roomData.maxAdults.toString());
+    if (roomData.maxChildren !== undefined) formData.append("maxChildren", roomData.maxChildren.toString());
+    if (roomData.bedCount !== undefined) formData.append("bedCount", roomData.bedCount.toString());
+    if (roomData.price !== undefined) formData.append("price", roomData.price.toString());
+    if (roomData.features) formData.append("features", JSON.stringify(roomData.features));
+
+    if (roomData.images) {
+        roomData.images.forEach(image => formData.append("images", image));
+    }
+
+    const response = await fetch(`${API_BASE_URL}/owner/dashboard/rooms/${roomId}`, {
+        method: "PUT",
+        headers: {
+            "x-api-key": API_key,
+            "Authorization": `Bearer ${token}`,
+        },
+        body: formData,
+    });
+
+    if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.message || "Failed to update room");
+    }
+
+    return await response.json();
+};
+
+export const deleteRoom = async (roomId: string, hotelId: string): Promise<void> => {
+    const token = localStorage.getItem("token");
+    const response = await fetch(`${API_BASE_URL}/owner/dashboard/${roomId}/${hotelId}/status/false`, {
+        method: "PATCH",
+        headers: {
+            "Content-Type": "application/json",
+            "x-api-key": API_key,
+            "Authorization": `Bearer ${token}`,
+        },
+    });
+
+    if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.message || "Failed to delete room");
+    }
 };
