@@ -1,37 +1,38 @@
 import { StatCard } from "@/components/StatCard";
-import { DollarSign, TrendingUp } from "lucide-react";
+import { DollarSign, Wallet, ArrowDownCircle } from "lucide-react";
 
 interface WalletStatsProps {
     totalIncome: number;
-    pendingIncome: number;
-    rejectedIncome: number;
+    totalWithdraw: number;
+    balance: number;
 }
 
-export function WalletStats({ totalIncome, pendingIncome, rejectedIncome }: WalletStatsProps) {
+export function WalletStats({ totalIncome, totalWithdraw, balance }: WalletStatsProps) {
     return (
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <StatCard
-                title="Approved Income"
+                title="Total Income"
                 value={`₹${totalIncome.toLocaleString()}`}
                 icon={DollarSign}
-                trend="All approved payments"
+                trend="Comprehensive earnings"
                 trendUp
             />
 
             <StatCard
-                title="Pending"
-                value={`₹${pendingIncome.toLocaleString()}`}
-                icon={TrendingUp}
-                trend="Awaiting confirmation"
-                trendUp
+                title="Total Withdraw"
+                value={`₹${totalWithdraw.toLocaleString()}`}
+                icon={ArrowDownCircle}
+                trend="Total payouts requested"
             />
 
             <StatCard
-                title="Rejected"
-                value={`₹${rejectedIncome.toLocaleString()}`}
-                icon={TrendingUp}
-                trend="Disapproved requests"
+                title="Available Balance"
+                value={`₹${balance.toLocaleString()}`}
+                icon={Wallet}
+                trend="Ready for withdrawal"
+                trendUp
             />
         </div>
     );
 }
+

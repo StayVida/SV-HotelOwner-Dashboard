@@ -24,12 +24,5 @@ export default defineConfig(({ mode }) => ({
       "clsx",
       "tailwind-merge"
     ],
-  },
-  server: {
-    port: 5173,
-    strictPort: true,
-    hmr: {
-      port: 5173,
-    },
-  },
+  }
 }));

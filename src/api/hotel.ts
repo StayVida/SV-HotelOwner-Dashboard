@@ -168,3 +168,65 @@ export const addBankDetails = async (details: AddBankDetailsRequest): Promise<vo
         throw new Error("Failed to add bank details");
     }
 };
+export interface LedgerEntry {
+    sr: number;
+    hotel_id: string;
+    booking_id: string | null;
+    txn_date: string;
+    via: string;
+    transaction_id: string;
+    type: "CR" | "WITHDRAW";
+    amount: number;
+    balance_after: number;
+}
+
+interface LedgerResponse {
+    count: number;
+    data: LedgerEntry[];
+}
+
+export const fetchLedger = async (): Promise<LedgerEntry[]> => {
+    const token = localStorage.getItem("token");
+    const response = await fetch(`${API_BASE_URL}/owner/dashboard/hotels/ledger`, {
+        method: "GET",
+        headers: {
+            "Content-Type": "application/json",
+            "x-api-key": API_key,
+            "Authorization": `Bearer ${token}`,
+        },
+    });
+
+    if (!response.ok) {
+        throw new Error("Failed to fetch ledger");
+    }
+
+    const result: LedgerResponse = await response.json();
+    return result.data;
+};
+
+export interface FinancialSummary {
+    totalIncome: number;
+    balance: number;
+    month: string;
+    year: number;
+    totalWithdraw: number;
+}
+
+export const fetchFinancialSummary = async (): Promise<FinancialSummary> => {
+    const token = localStorage.getItem("token");
+    const response = await fetch(`${API_BASE_URL}/owner/dashboard/hotels/financial-summary`, {
+        method: "GET",
+        headers: {
+            "Content-Type": "application/json",
+            "x-api-key": API_key,
+            "Authorization": `Bearer ${token}`,
+        },
+    });
+
+    if (!response.ok) {
+        throw new Error("Failed to fetch financial summary");
+    }
+
+    const result = await response.json();
+    return result;
+};
