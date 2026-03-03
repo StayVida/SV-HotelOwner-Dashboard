@@ -212,12 +212,17 @@ const Rooms = () => {
           </p>
         </div>
         <div className="relative z-10 w-full sm:w-auto flex justify-center sm:justify-end">
-          <AddRoomDialog 
-            onAddRoom={handleAddRoom} 
+          <AddRoomDialog
+            onAddRoom={handleAddRoom}
             onUpdateRoom={handleUpdateRoom}
             editingRoom={editingRoom}
             open={isDialogOpen}
-            onOpenChange={setIsDialogOpen}
+            onOpenChange={(open) => {
+              // Block closing while an add/update API call is in progress
+              if (!open && (mutation.isPending || updateMutation.isPending)) return;
+              setIsDialogOpen(open);
+              if (!open) setEditingRoom(null);
+            }}
           />
         </div>
       </div>
@@ -357,8 +362,8 @@ const Rooms = () => {
                 )}
               </div>
 
-              <Button 
-                className="w-full gap-2 font-bold h-11 sm:h-12 shadow-md hover:shadow-glow transition-all" 
+              <Button
+                className="w-full gap-2 font-bold h-11 sm:h-12 shadow-md hover:shadow-glow transition-all"
                 variant="outline"
                 onClick={() => openEditDialog(room)}
               >
