@@ -223,3 +223,129 @@ export const updateBookingStatus = async (bookingId: string, status: string): Pr
         throw new Error(`Failed to update booking status to ${status}`);
     }
 };
+
+export interface AvailableRoom {
+    room_ID: string;
+    room_NO: number;
+    hotel_ID: string;
+    room_Type: string;
+    price_per_night: number;
+    total_nights: number;
+    total_price: number;
+    images: string[];
+}
+
+interface AvailableRoomsResponse {
+    status: number;
+    message: string;
+    data: AvailableRoom[];
+}
+
+export const fetchAvailableRooms = async (checkIn: string, checkOut: string): Promise<AvailableRoom[]> => {
+    const token = localStorage.getItem("token");
+    const response = await fetch(`${API_BASE_URL}/owner/dashboard/available-rooms?checkIn=${checkIn}&checkOut=${checkOut}`, {
+        method: "GET",
+        headers: {
+            "Content-Type": "application/json",
+            "x-api-key": API_key,
+            "Authorization": `Bearer ${token}`,
+        },
+    });
+
+    if (!response.ok) {
+        throw new Error("Failed to fetch available rooms");
+    }
+
+    const result: AvailableRoomsResponse = await response.json();
+    return result.data;
+};
+
+export interface LockRoomRequest {
+    roomId: string;
+    checkIn: string;
+    checkOut: string;
+}
+
+export interface LockRoomResponse {
+    hotelId: string;
+    roomId: string;
+    roomNo: number;
+    roomType: string;
+    checkIn: string;
+    checkOut: string;
+    roomPrice: number;
+    lockExpiry: string;
+}
+
+export const lockRoom = async (data: LockRoomRequest): Promise<LockRoomResponse> => {
+    const token = localStorage.getItem("token");
+    const response = await fetch(`${API_BASE_URL}/owner/dashboard/lock-room`, {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+            "x-api-key": API_key,
+            "Authorization": `Bearer ${token}`,
+        },
+        body: JSON.stringify(data),
+    });
+
+    if (!response.ok) {
+        throw new Error("Failed to lock room");
+    }
+
+    return await response.json();
+};
+
+export interface CreateOfflineBookingRequest {
+    email: string;
+    lockRoomId: string;
+    adults: number;
+    children: number;
+    paymentType: string;
+    name: string;
+    countryCode: string;
+    phoneNo: string;
+    checkIn: string;
+    checkOut: string;
+}
+
+export interface CreateOfflineBookingResponse {
+    status: number;
+    message: string;
+    data: {
+        name: string;
+        bookingId: string;
+        bookingStatus: string;
+        paymentStatus: string;
+        roomPrice: number;
+        platformCharges: number;
+        taxAmount: number;
+        createdAt: string;
+        checkIn: string;
+        checkOut: string;
+        duration: number;
+        advanceRate: number;
+        totalAmount_ADV: number;
+        totalAmount: number;
+        paymentType: string;
+    };
+}
+
+export const createOfflineBooking = async (data: CreateOfflineBookingRequest): Promise<CreateOfflineBookingResponse> => {
+    const token = localStorage.getItem("token");
+    const response = await fetch(`${API_BASE_URL}/owner/dashboard/create`, {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+            "x-api-key": API_key,
+            "Authorization": `Bearer ${token}`,
+        },
+        body: JSON.stringify(data),
+    });
+
+    if (!response.ok) {
+        throw new Error("Failed to create offline booking");
+    }
+
+    return await response.json();
+};

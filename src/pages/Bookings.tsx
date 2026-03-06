@@ -10,6 +10,7 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { AlertCircle } from "lucide-react";
 
 import { BookingDetailsDialog } from "@/components/BookingDetailsDialog";
+import { CreateOfflineBookingDialog } from "@/components/bookings/CreateOfflineBookingDialog";
 import { BookingData } from "@/api/bookings";
 
 const Bookings = () => {
@@ -19,6 +20,7 @@ const Bookings = () => {
   const [sortBy, setSortBy] = useState<string>("checkin-asc");
   const [selectedBooking, setSelectedBooking] = useState<BookingData | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [newBookingOpen, setNewBookingOpen] = useState(false);
 
   const { data: bookings, isLoading, error } = useQuery({
     queryKey: ["bookings"],
@@ -73,14 +75,14 @@ const Bookings = () => {
     return (
       <div className="space-y-8 animate-fade-in">
         <div className="flex justify-between items-center">
-             <Skeleton className="h-12 w-64" />
-             <Skeleton className="h-12 w-32" />
+          <Skeleton className="h-12 w-64" />
+          <Skeleton className="h-12 w-32" />
         </div>
         <Skeleton className="h-24 w-full rounded-xl" />
         <div className="space-y-5">
-             <Skeleton className="h-48 w-full rounded-xl" />
-             <Skeleton className="h-48 w-full rounded-xl" />
-             <Skeleton className="h-48 w-full rounded-xl" />
+          <Skeleton className="h-48 w-full rounded-xl" />
+          <Skeleton className="h-48 w-full rounded-xl" />
+          <Skeleton className="h-48 w-full rounded-xl" />
         </div>
       </div>
     );
@@ -89,7 +91,7 @@ const Bookings = () => {
   if (error) {
     return (
       <div className="space-y-8 animate-fade-in">
-        <BookingsHeader />
+        <BookingsHeader onNewBooking={() => setNewBookingOpen(true)} />
         <Alert variant="destructive">
           <AlertCircle className="h-4 w-4" />
           <AlertTitle>Error</AlertTitle>
@@ -103,42 +105,47 @@ const Bookings = () => {
 
   return (
     <div className="space-y-6 sm:space-y-8 animate-fade-in pb-24">
-        <BookingsHeader />
+      <BookingsHeader onNewBooking={() => setNewBookingOpen(true)} />
 
-        <BookingsFilter 
-            searchQuery={searchQuery}
-            setSearchQuery={setSearchQuery}
-            statusFilter={statusFilter}
-            setStatusFilter={setStatusFilter}
-            paymentStatusFilter={paymentStatusFilter}
-            setPaymentStatusFilter={setPaymentStatusFilter}
-            sortBy={sortBy}
-            setSortBy={setSortBy}
-        />
+      <BookingsFilter
+        searchQuery={searchQuery}
+        setSearchQuery={setSearchQuery}
+        statusFilter={statusFilter}
+        setStatusFilter={setStatusFilter}
+        paymentStatusFilter={paymentStatusFilter}
+        setPaymentStatusFilter={setPaymentStatusFilter}
+        sortBy={sortBy}
+        setSortBy={setSortBy}
+      />
 
-        <div className="grid gap-4 sm:gap-6">
-          {filteredAndSorted.length === 0 && (
-            <Card className="p-8 sm:p-12 text-center border-dashed border-border/60 bg-accent/5">
-              <p className="text-lg font-bold text-foreground">No bookings found</p>
-              <p className="text-sm text-muted-foreground mt-2">Try adjusting your search or filters.</p>
-            </Card>
-          )}
+      <div className="grid gap-4 sm:gap-6">
+        {filteredAndSorted.length === 0 && (
+          <Card className="p-8 sm:p-12 text-center border-dashed border-border/60 bg-accent/5">
+            <p className="text-lg font-bold text-foreground">No bookings found</p>
+            <p className="text-sm text-muted-foreground mt-2">Try adjusting your search or filters.</p>
+          </Card>
+        )}
 
-          {filteredAndSorted.map((booking, index) => (
-            <BookingCard 
-              key={booking.booking_ID} 
-              booking={booking} 
-              index={index} 
-              onViewDetails={handleViewDetails}
-            />
-          ))}
-        </div>
+        {filteredAndSorted.map((booking, index) => (
+          <BookingCard
+            key={booking.booking_ID}
+            booking={booking}
+            index={index}
+            onViewDetails={handleViewDetails}
+          />
+        ))}
+      </div>
 
-        <BookingDetailsDialog
-          booking={selectedBooking}
-          open={dialogOpen}
-          onOpenChange={setDialogOpen}
-        />
+      <BookingDetailsDialog
+        booking={selectedBooking}
+        open={dialogOpen}
+        onOpenChange={setDialogOpen}
+      />
+
+      <CreateOfflineBookingDialog
+        open={newBookingOpen}
+        onOpenChange={setNewBookingOpen}
+      />
     </div>
   );
 };
