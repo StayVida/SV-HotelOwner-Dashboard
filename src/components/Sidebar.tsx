@@ -3,6 +3,7 @@ import { Home, Calendar, BedDouble, ListChecks, Hotel, Wallet, ScanLine, X, LogO
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/context/AuthContext";
+import logo from "@/assets/zrnpmtooi6sdhorey8qh.webp";
 
 interface SidebarProps {
   isMobile: boolean;
@@ -38,9 +39,8 @@ export const Sidebar = ({ isMobile, sidebarOpen, onClose }: SidebarProps) => {
               <X className="w-5 h-5" />
             </Button>
           )}
-          <div className="relative w-12 h-12 rounded-2xl gradient-primary flex items-center justify-center shadow-glow shrink-0">
-            <Hotel className="w-7 h-7 text-primary-foreground" />
-            <div className="absolute inset-0 rounded-2xl bg-white/20 animate-pulse"></div>
+          <div className="relative w-12 h-12 rounded-2xl bg-white flex items-center justify-center shadow-glow shrink-0 overflow-hidden">
+            <img src={logo} alt="Stay Vida Logo" className="w-10 h-10 object-contain" />
           </div>
           <div className="min-w-0">
             <h1 className="text-xl font-bold text-foreground tracking-tight">Stay Vida</h1>

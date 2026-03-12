@@ -8,6 +8,7 @@ import { useAuth } from "@/context/AuthContext";
 import { useMutation } from "@tanstack/react-query";
 import { requestOtp, verifyOtp } from "@/api/auth";
 import { toast } from "sonner";
+import logo from "@/assets/zrnpmtooi6sdhorey8qh.webp";
 
 const Login = () => {
   const { user, login } = useAuth();
@@ -70,9 +71,8 @@ const Login = () => {
     <div className="min-h-screen bg-background flex items-center justify-center p-4">
       <Card className="w-full max-w-md p-8 border-border/50 bg-gradient-to-br from-card to-card/80 backdrop-blur">
         <div className="flex items-center gap-3 mb-6">
-          <div className="relative w-12 h-12 rounded-2xl gradient-primary flex items-center justify-center shadow-glow">
-            <Hotel className="w-7 h-7 text-primary-foreground" />
-            <div className="absolute inset-0 rounded-2xl bg-white/20 animate-pulse"></div>
+          <div className="relative w-12 h-12 rounded-2xl bg-white flex items-center justify-center shadow-glow overflow-hidden">
+            <img src={logo} alt="Stay Vida Logo" className="w-10 h-10 object-contain" />
           </div>
           <div>
             <h1 className="text-xl font-bold tracking-tight">HotelManager</h1>
