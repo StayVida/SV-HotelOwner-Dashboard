@@ -55,26 +55,76 @@ const Rooms = () => {
 
   const mutation = useMutation({
     mutationFn: registerRoomWithImages,
+    onMutate: async (newRoom) => {
+      await queryClient.cancelQueries({ queryKey: ["rooms"] });
+      const previousRooms = queryClient.getQueryData<RoomData[]>(["rooms"]);
+      
+      // We don't have the new ID yet, so we use a temp one
+      const optimisticRoom: RoomData = {
+        room_ID: `temp-${Date.now()}`,
+        room_NO: parseInt(newRoom.room_NO),
+        room_Type: newRoom.roomType,
+        hotel_ID: "", // Will be filled by server
+        features: newRoom.features,
+        price: newRoom.price,
+        Status: "Available",
+        isEnable: true,
+        createdAt: new Date().toISOString(),
+        images: newRoom.images.map(file => URL.createObjectURL(file)),
+        maxAdults: newRoom.maxAdults,
+        maxChildren: newRoom.maxChildren,
+        bedCount: newRoom.bedCount,
+      };
+
+      queryClient.setQueryData(["rooms"], (old: RoomData[] | undefined) => [...(old || []), optimisticRoom]);
+      return { previousRooms };
+    },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["rooms"] });
       toast.success("Room registered successfully!");
       setIsDialogOpen(false);
     },
-    onError: (error: Error) => {
+    onError: (error: Error, _newRoom, context) => {
+      if (context?.previousRooms) {
+        queryClient.setQueryData(["rooms"], context.previousRooms);
+      }
       toast.error(error.message || "Failed to register room");
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ["rooms"] });
     },
   });
 
   const updateMutation = useMutation({
     mutationFn: ({ roomId, data }: { roomId: string; data: any }) => updateRoom(roomId, data),
+    onMutate: async ({ roomId, data }) => {
+      await queryClient.cancelQueries({ queryKey: ["rooms"] });
+      const previousRooms = queryClient.getQueryData<RoomData[]>(["rooms"]);
+
+      queryClient.setQueryData(["rooms"], (old: RoomData[] | undefined) => 
+        old?.map(room => room.room_ID === roomId ? { 
+          ...room, 
+          ...data,
+          room_Type: data.roomType || room.room_Type, // Handle field name difference
+          // If new images provided, show them (though this is tricky with File objects)
+          images: data.images ? [...room.images, ...data.images.map((f: File) => URL.createObjectURL(f))] : room.images
+        } : room)
+      );
+
+      return { previousRooms };
+    },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["rooms"] });
       toast.success("Room updated successfully!");
       setEditingRoom(null);
       setIsDialogOpen(false);
     },
-    onError: (error: Error) => {
+    onError: (error: Error, _variables, context) => {
+      if (context?.previousRooms) {
+        queryClient.setQueryData(["rooms"], context.previousRooms);
+      }
       toast.error(error.message || "Failed to update room");
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ["rooms"] });
     },
   });
 
@@ -217,6 +267,7 @@ const Rooms = () => {
             onUpdateRoom={handleUpdateRoom}
             editingRoom={editingRoom}
             open={isDialogOpen}
+            isPending={mutation.isPending || updateMutation.isPending}
             onOpenChange={(open) => {
               // Block closing while an add/update API call is in progress
               if (!open && (mutation.isPending || updateMutation.isPending)) return;

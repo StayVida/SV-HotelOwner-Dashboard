@@ -3,15 +3,16 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Plus, X, Upload, Check } from "lucide-react";
+import { Plus, X, Upload, Check, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
-import { useQuery } from "@tanstack/react-query";
-import { fetchFeatures } from "@/api/rooms";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { fetchFeatures, fetchRoomImages, removeRoomImage, updateRoom, updateRoomImage } from "@/api/rooms";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { ChevronDown } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
+import { cn } from "@/lib/utils";
 
 interface AddRoomDialogProps {
   onAddRoom: (room: {
@@ -47,12 +48,31 @@ interface AddRoomDialogProps {
   } | null;
   open?: boolean;
   onOpenChange?: (open: boolean) => void;
+  isPending?: boolean;
 }
 
-export function AddRoomDialog({ onAddRoom, onUpdateRoom, editingRoom, open: controlledOpen, onOpenChange }: AddRoomDialogProps) {
+// Helper to check and format base64 images
+const normalizeImage = (base64Str: string) => {
+  if (!base64Str) return '';
+  // If it's already a valid url or data URI, return as-is
+  if (base64Str.startsWith('http') || base64Str.startsWith('data:')) return base64Str;
+  
+  // Guess the mime type based on base64 magic numbers
+  let mimeType = 'image/jpeg';
+  if (base64Str.startsWith('iVBORw0K')) mimeType = 'image/png';
+  else if (base64Str.startsWith('R0lGODlh')) mimeType = 'image/gif';
+  else if (base64Str.startsWith('UklGR')) mimeType = 'image/webp';
+  else if (base64Str.startsWith('AAAA')) mimeType = 'image/avif';
+  
+  return `data:${mimeType};base64,${base64Str}`;
+};
+
+export function AddRoomDialog({ onAddRoom, onUpdateRoom, editingRoom, open: controlledOpen, onOpenChange, isPending }: AddRoomDialogProps) {
   const [internalOpen, setInternalOpen] = useState(false);
   const open = controlledOpen !== undefined ? controlledOpen : internalOpen;
   const setOpen = onOpenChange !== undefined ? onOpenChange : setInternalOpen;
+
+  const queryClient = useQueryClient();
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [formData, setFormData] = useState({
@@ -65,7 +85,28 @@ export function AddRoomDialog({ onAddRoom, onUpdateRoom, editingRoom, open: cont
     bedCount: 1,
     images: [] as File[],
     previews: [] as string[],
+    existingImages: {} as Record<string, string>,
   });
+
+  const [isRemovingImage, setIsRemovingImage] = useState<string | null>(null);
+  const [isUploadingImage, setIsUploadingImage] = useState(false);
+
+  const loadExistingImages = async (roomId: string) => {
+    try {
+      const images = await fetchRoomImages(roomId);
+      const sortedKeys = Object.keys(images).sort((a, b) => parseInt(a) - parseInt(b));
+      const sortedImages: Record<string, string> = {};
+      sortedKeys.forEach(k => sortedImages[k] = images[k]);
+      
+      setFormData(prev => ({ 
+        ...prev, 
+        existingImages: sortedImages,
+        previews: [...sortedKeys.map(k => images[k]), ...prev.images.map(file => URL.createObjectURL(file))]
+      }));
+    } catch (error) {
+      console.error("Failed to fetch room images:", error);
+    }
+  };
 
   useEffect(() => {
     if (editingRoom) {
@@ -79,7 +120,10 @@ export function AddRoomDialog({ onAddRoom, onUpdateRoom, editingRoom, open: cont
         bedCount: editingRoom.bedCount || 1,
         images: [],
         previews: editingRoom.images || [],
+        existingImages: {},
       });
+      
+      loadExistingImages(editingRoom.room_ID);
     } else if (!open) {
       setFormData({
         room_Type: "",
@@ -91,6 +135,7 @@ export function AddRoomDialog({ onAddRoom, onUpdateRoom, editingRoom, open: cont
         bedCount: 1,
         images: [],
         previews: [],
+        existingImages: {},
       });
     }
   }, [editingRoom, open]);
@@ -102,32 +147,83 @@ export function AddRoomDialog({ onAddRoom, onUpdateRoom, editingRoom, open: cont
 
   const enabledFeatures = allFeatures.filter(f => f.status === "enable");
 
-  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
-    if (!files) return;
+    if (!files || files.length === 0) return;
 
     const newFiles = Array.from(files);
-    const newPreviews = newFiles.map(file => URL.createObjectURL(file));
 
-    setFormData(prev => ({
-      ...prev,
-      images: [...prev.images, ...newFiles],
-      previews: [...prev.previews, ...newPreviews]
-    }));
+    if (editingRoom) {
+      setIsUploadingImage(true);
+      const loadingToast = toast.loading("Uploading image...");
+      try {
+        await updateRoomImage(editingRoom.room_ID, newFiles);
+        toast.dismiss(loadingToast);
+        toast.success("Image uploaded successfully");
+        
+        // Invalidate and refetch to show the new image
+        queryClient.invalidateQueries({ queryKey: ["rooms"] });
+        
+        // Refetch room images to update everything from server
+        await loadExistingImages(editingRoom.room_ID);
+      } catch (error) {
+        toast.dismiss(loadingToast);
+        toast.error("Failed to upload image");
+        console.error("Upload error:", error);
+      } finally {
+        setIsUploadingImage(false);
+        if (fileInputRef.current) fileInputRef.current.value = "";
+      }
+    } else {
+      const newPreviews = newFiles.map(file => URL.createObjectURL(file));
+      setFormData(prev => ({
+        ...prev,
+        images: [...prev.images, ...newFiles],
+        previews: [...prev.previews, ...newPreviews]
+      }));
+    }
   };
 
   const removeImage = (index: number) => {
     setFormData(prev => {
-      if (prev.previews[index].startsWith("blob:")) {
-        URL.revokeObjectURL(prev.previews[index]);
+      // If it's a new upload
+      const preview = prev.previews[index];
+      if (preview.startsWith("blob:")) {
+        URL.revokeObjectURL(preview);
+        
+        // Find the correct index in the new images array
+        // Previews = [existing, existing, new1, new2]
+        // Images = [new1, new2]
+        const existingCount = Object.keys(prev.existingImages).length;
+        const newImageIndex = index - existingCount;
+
+        return {
+          ...prev,
+          images: prev.images.filter((_, i) => i !== newImageIndex),
+          previews: prev.previews.filter((_, i) => i !== index)
+        };
       }
       
-      return {
-        ...prev,
-        images: prev.images.filter((_, i) => i !== index),
-        previews: prev.previews.filter((_, i) => i !== index)
-      };
+      return prev; // Should not happen for new uploads
     });
+  };
+
+  const handleDeleteExistingImage = async (indexStr: string) => {
+    if (!editingRoom) return;
+    
+    setIsRemovingImage(indexStr);
+    try {
+      await removeRoomImage(editingRoom.room_ID, parseInt(indexStr));
+      toast.success("Image removed successfully");
+      
+      // Invalidate and refetch everything
+      queryClient.invalidateQueries({ queryKey: ["rooms"] });
+      await loadExistingImages(editingRoom.room_ID);
+    } catch (error) {
+      toast.error("Failed to remove image");
+    } finally {
+      setIsRemovingImage(null);
+    }
   };
 
   const toggleFeature = (feature: string) => {
@@ -158,7 +254,6 @@ export function AddRoomDialog({ onAddRoom, onUpdateRoom, editingRoom, open: cont
         bedCount: formData.bedCount,
         images: formData.images.length > 0 ? formData.images : undefined,
       });
-      setOpen(false);
     } else {
       if (formData.images.length === 0) {
         toast.error("Please upload at least one image");
@@ -174,7 +269,6 @@ export function AddRoomDialog({ onAddRoom, onUpdateRoom, editingRoom, open: cont
         bedCount: formData.bedCount,
         images: formData.images,
       });
-      setOpen(false);
     }
   };
 
@@ -201,27 +295,55 @@ export function AddRoomDialog({ onAddRoom, onUpdateRoom, editingRoom, open: cont
           <div className="space-y-4">
             <Label className="font-bold text-base sm:text-lg tracking-tight">Room Images</Label>
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 sm:gap-4">
-              {formData.previews.map((img, idx) => (
-                <div key={idx} className="relative group aspect-[4/3] rounded-xl overflow-hidden border border-border/50 bg-muted/20">
-                  <img src={img} alt="Preview" className="w-full h-full object-cover" />
+              {/* Existing Images */}
+              {Object.keys(formData.existingImages).sort((a, b) => parseInt(a) - parseInt(b)).map((indexStr) => (
+                <div key={`existing-${indexStr}`} className="relative group aspect-[4/3] rounded-xl overflow-hidden border border-border/50 bg-muted/20">
+                  <img src={normalizeImage(formData.existingImages[indexStr])} alt="Room" className="w-full h-full object-cover" />
                   <button
                     type="button"
-                    onClick={() => removeImage(idx)}
-                    className="absolute top-2 right-2 p-1.5 bg-destructive text-destructive-foreground rounded-full shadow-lg transition-transform hover:scale-110"
+                    disabled={isRemovingImage === indexStr || isPending}
+                    onClick={() => handleDeleteExistingImage(indexStr)}
+                    className="absolute top-2 right-2 p-1.5 bg-destructive text-destructive-foreground rounded-full shadow-lg transition-transform hover:scale-110 disabled:opacity-50"
                   >
-                    <X className="w-3.5 h-3.5" />
+                    {isRemovingImage === indexStr ? (
+                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                    ) : (
+                      <X className="w-3.5 h-3.5" />
+                    )}
                   </button>
                 </div>
               ))}
+              
+              {/* New Image Previews */}
+              {formData.previews.slice(Object.keys(formData.existingImages).length).map((img, idx) => {
+                const globalIndex = Object.keys(formData.existingImages).length + idx;
+                return (
+                  <div key={`new-${idx}`} className="relative group aspect-[4/3] rounded-xl overflow-hidden border border-border/50 bg-muted/20">
+                    <img src={img} alt="Preview" className="w-full h-full object-cover" />
+                    <button
+                      type="button"
+                      disabled={isPending}
+                      onClick={() => removeImage(globalIndex)}
+                      className="absolute top-2 right-2 p-1.5 bg-destructive text-destructive-foreground rounded-full shadow-lg transition-transform hover:scale-110"
+                    >
+                      <X className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                );
+              })}
+              
               <button
                 type="button"
+                disabled={isPending || isUploadingImage}
                 onClick={() => fileInputRef.current?.click()}
-                className="flex flex-col items-center justify-center aspect-[4/3] rounded-xl border-2 border-dashed border-border/50 hover:border-primary/50 transition-all duration-300 bg-muted/30 group hover:bg-muted/50"
+                className="flex flex-col items-center justify-center aspect-[4/3] rounded-xl border-2 border-dashed border-border/50 hover:border-primary/50 transition-all duration-300 bg-muted/30 group hover:bg-muted/50 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center mb-2 group-hover:scale-110 transition-transform">
-                  <Upload className="w-5 h-5 text-primary" />
+                  <Upload className={cn("w-5 h-5 text-primary", isUploadingImage && "animate-bounce")} />
                 </div>
-                <span className="text-[10px] sm:text-xs text-muted-foreground font-bold uppercase tracking-wider">Upload</span>
+                <span className="text-[10px] sm:text-xs text-muted-foreground font-bold uppercase tracking-wider">
+                  {isUploadingImage ? "Uploading..." : "Upload"}
+                </span>
               </button>
             </div>
             <input
@@ -244,6 +366,7 @@ export function AddRoomDialog({ onAddRoom, onUpdateRoom, editingRoom, open: cont
                 onChange={(e) => setFormData({ ...formData, room_Type: e.target.value })}
                 className="h-11 border-border/50 focus:border-primary text-base"
                 required
+                disabled={isPending}
               />
             </div>
             <div className="space-y-2.5">
@@ -255,6 +378,7 @@ export function AddRoomDialog({ onAddRoom, onUpdateRoom, editingRoom, open: cont
                 onChange={(e) => setFormData({ ...formData, room_NO: e.target.value })}
                 className="h-11 border-border/50 focus:border-primary text-base"
                 required
+                disabled={isPending}
               />
             </div>
           </div>
@@ -263,7 +387,7 @@ export function AddRoomDialog({ onAddRoom, onUpdateRoom, editingRoom, open: cont
             <Label className="font-bold text-base sm:text-lg tracking-tight">Features & Amenities</Label>
             <Popover>
               <PopoverTrigger asChild>
-                <Button variant="outline" type="button" className="w-full justify-between border-border/50 h-auto min-h-[48px] px-4 py-2.5 rounded-xl">
+                <Button variant="outline" type="button" disabled={isPending} className="w-full justify-between border-border/50 h-auto min-h-[48px] px-4 py-2.5 rounded-xl">
                   <div className="flex flex-wrap gap-1.5 items-center">
                     {formData.features.length > 0 ? (
                       formData.features.map((f) => (
@@ -293,6 +417,7 @@ export function AddRoomDialog({ onAddRoom, onUpdateRoom, editingRoom, open: cont
                           <Checkbox
                             checked={formData.features.includes(feature.name)}
                             onCheckedChange={() => toggleFeature(feature.name)}
+                            disabled={isPending}
                           />
                           <span className="flex-1 font-medium">{feature.name}</span>
                           {formData.features.includes(feature.name) && (
@@ -317,6 +442,7 @@ export function AddRoomDialog({ onAddRoom, onUpdateRoom, editingRoom, open: cont
                 value={formData.maxAdults}
                 onChange={(e) => setFormData({ ...formData, maxAdults: parseInt(e.target.value) })}
                 className="h-11 border-border/50 text-base"
+                disabled={isPending}
               />
             </div>
             <div className="space-y-2.5">
@@ -328,6 +454,7 @@ export function AddRoomDialog({ onAddRoom, onUpdateRoom, editingRoom, open: cont
                 value={formData.maxChildren}
                 onChange={(e) => setFormData({ ...formData, maxChildren: parseInt(e.target.value) })}
                 className="h-11 border-border/50 text-base"
+                disabled={isPending}
               />
             </div>
             <div className="space-y-2.5">
@@ -339,6 +466,7 @@ export function AddRoomDialog({ onAddRoom, onUpdateRoom, editingRoom, open: cont
                 value={formData.bedCount}
                 onChange={(e) => setFormData({ ...formData, bedCount: parseInt(e.target.value) })}
                 className="h-11 border-border/50 text-base"
+                disabled={isPending}
               />
             </div>
           </div>
@@ -355,6 +483,7 @@ export function AddRoomDialog({ onAddRoom, onUpdateRoom, editingRoom, open: cont
                 onChange={(e) => setFormData({ ...formData, price: parseInt(e.target.value) })}
                 className="h-12 pl-8 border-border/50 focus:border-primary text-lg font-black"
                 required
+                disabled={isPending}
               />
             </div>
           </div>
@@ -370,9 +499,10 @@ export function AddRoomDialog({ onAddRoom, onUpdateRoom, editingRoom, open: cont
             </Button>
             <Button
               type="submit"
+              disabled={isPending}
               className="flex-1 h-12 gradient-primary hover:shadow-glow transition-all duration-300 font-bold uppercase tracking-wider text-xs"
             >
-              {editingRoom ? "Save Changes" : "Add Room"}
+              {isPending ? (editingRoom ? "Saving..." : "Adding...") : (editingRoom ? "Save Changes" : "Add Room")}
             </Button>
           </div>
         </form>

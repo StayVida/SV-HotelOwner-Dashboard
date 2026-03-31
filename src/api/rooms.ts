@@ -144,6 +144,28 @@ export const updateRoom = async (roomId: string, roomData: Partial<RegisterRoomD
     return await response.json();
 };
 
+export const updateRoomImage = async (roomId: string, images: File[]): Promise<any> => {
+    const token = localStorage.getItem("token");
+    const formData = new FormData();
+    images.forEach(image => formData.append("images", image));
+
+    const response = await fetch(`${API_BASE_URL}/owner/dashboard/rooms/${roomId}/update-image`, {
+        method: "POST",
+        headers: {
+            "x-api-key": API_key,
+            "Authorization": `Bearer ${token}`,
+        },
+        body: formData,
+    });
+
+    if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.message || "Failed to update room image");
+    }
+
+    return await response.json();
+};
+
 export const deleteRoom = async (roomId: string, hotelId: string): Promise<void> => {
     const token = localStorage.getItem("token");
     const response = await fetch(`${API_BASE_URL}/owner/dashboard/${roomId}/${hotelId}/status/false`, {
@@ -158,5 +180,42 @@ export const deleteRoom = async (roomId: string, hotelId: string): Promise<void>
     if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
         throw new Error(errorData.message || "Failed to delete room");
+    }
+};
+
+export const fetchRoomImages = async (roomId: string): Promise<Record<string, string>> => {
+    const token = localStorage.getItem("token");
+    const response = await fetch(`${API_BASE_URL}/owner/dashboard/rooms/${roomId}/images`, {
+        method: "GET",
+        headers: {
+            "Content-Type": "application/json",
+            "x-api-key": API_key,
+            "Authorization": `Bearer ${token}`,
+        },
+    });
+
+    if (!response.ok) {
+        throw new Error("Failed to fetch room images");
+    }
+
+    const result = await response.json();
+    return result.data;
+};
+
+export const removeRoomImage = async (roomId: string, imageIndex: number): Promise<void> => {
+    const token = localStorage.getItem("token");
+    const response = await fetch(`${API_BASE_URL}/owner/dashboard/rooms/remove-image`, {
+        method: "DELETE",
+        headers: {
+            "Content-Type": "application/json",
+            "x-api-key": API_key,
+            "Authorization": `Bearer ${token}`,
+        },
+        body: JSON.stringify({ roomId, imageIndex }),
+    });
+
+    if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.message || "Failed to remove image");
     }
 };
