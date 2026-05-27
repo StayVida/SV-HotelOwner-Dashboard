@@ -51,10 +51,8 @@ export const BookingStayInfo = ({ booking }: BookingStayInfoProps) => {
           <span className="font-bold">₹{booking["Room Price"]}</span>
         </div>
         <div className="flex justify-between items-center text-xs sm:text-sm">
-          <span className="text-muted-foreground font-medium">
-            Taxes {taxPercent > 0 && <span className="text-muted-foreground/70">({taxPercent}%)</span>}
-          </span>
-          <span className="font-bold">₹{booking.tax_amount}</span>
+          <span className="text-muted-foreground font-medium">Taxes</span>
+          <span className="font-bold">{taxPercent}%</span>
         </div>
         <div className="flex justify-between items-center text-xs sm:text-sm">
           <span className="text-muted-foreground font-medium">Platform Fee</span>
