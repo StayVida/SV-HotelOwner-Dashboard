@@ -67,7 +67,7 @@ export const fetchFeatures = async (): Promise<FeatureData[]> => {
 };
 export interface RegisterRoomData {
     roomType: string;
-    room_NO: string;
+    room_NO: string[];
     features: string[];
     maxAdults: number;
     maxChildren: number;
@@ -82,7 +82,7 @@ export const registerRoomWithImages = async (roomData: RegisterRoomData): Promis
 
     const formData = new FormData();
     formData.append("roomType", roomType);
-    formData.append("roomNumbers", room_NO.toString());
+    formData.append("roomNumbers", JSON.stringify(room_NO));
     formData.append("maxAdults", maxAdults.toString());
     formData.append("maxChildren", maxChildren.toString());
     formData.append("bedCount", bedCount.toString());
