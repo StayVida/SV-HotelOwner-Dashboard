@@ -82,7 +82,7 @@ export const registerRoomWithImages = async (roomData: RegisterRoomData): Promis
 
     const formData = new FormData();
     formData.append("roomType", roomType);
-    formData.append("roomNumber", room_NO.toString());
+    formData.append("roomNumbers", room_NO.toString());
     formData.append("maxAdults", maxAdults.toString());
     formData.append("maxChildren", maxChildren.toString());
     formData.append("bedCount", bedCount.toString());
