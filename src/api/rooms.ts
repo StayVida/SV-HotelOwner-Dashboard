@@ -79,10 +79,10 @@ export interface RegisterRoomData {
 export const registerRoomWithImages = async (roomData: RegisterRoomData): Promise<any> => {
     const token = localStorage.getItem("token");
     const { roomType, room_NO, maxAdults, maxChildren, bedCount, price, features, images } = roomData;
-
+    //...
     const formData = new FormData();
     formData.append("roomType", roomType);
-    formData.append("roomNumber", room_NO.toString());
+    formData.append("roomNumbers", room_NO.toString());
     formData.append("maxAdults", maxAdults.toString());
     formData.append("maxChildren", maxChildren.toString());
     formData.append("bedCount", bedCount.toString());
